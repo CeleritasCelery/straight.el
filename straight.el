@@ -2866,6 +2866,23 @@ for dependency resolution."
           ;; override the default value (which is determined according
           ;; to the selected VC backend).
           ;;
+          ;; To keep overridden recipes simple, the `:host' and
+          ;; `:repo' can be inherited from the original recipe. Also
+          ;; :fork "user/repo" is shorthand for :fork (:repo
+          ;; "user/repo")
+          (when-let ((fork (plist-get plist :fork))
+                     (_stringp (stringp fork)))
+            (straight--put plist :fork `(:repo ,fork)))
+          (cl-destructuring-bind (&key host repo fork &allow-other-keys)
+              (cdr (straight-recipes-retrieve package))
+            (when (and host (not (plist-member plist :host)))
+              (straight--put plist :host host))
+            (when (and repo (not (plist-member plist :repo)))
+              (straight--put plist :repo repo))
+            (when-let ((host host)
+                       (fork-plist (plist-get plist :fork))
+                       (_no-fork-host (not (plist-member fork-plist :host))))
+              (straight--put plist :fork (plist-put fork-plist :host host))))
           ;; The normalized recipe format will have the package name
           ;; as a string, not a symbol.
           (let ((package (symbol-name package)))
